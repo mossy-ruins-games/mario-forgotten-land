@@ -90,7 +90,11 @@ export class Input {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      el.setPointerCapture(e.pointerId);
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {
+        /* synthetic events */
+      }
       if (!set.has(e.pointerId)) edge();
       set.add(e.pointerId);
       el.classList.add('held');
@@ -109,7 +113,11 @@ export class Input {
     this.stickId = e.pointerId;
     this.originX = e.clientX;
     this.originY = e.clientY;
-    this.layer.setPointerCapture(e.pointerId);
+    try {
+      this.layer.setPointerCapture(e.pointerId);
+    } catch {
+      /* synthetic events and some mobile browsers */
+    }
     this.stick.classList.add('floating');
     this.moveStick(e.clientX, e.clientY);
   };

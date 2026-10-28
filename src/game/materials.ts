@@ -47,7 +47,7 @@ export const C = {
   pink: 0xf2a3b5,
   purple: 0x7a4ec8,
   cloud: 0xfffefe,
-  pit: 0x2a343c,
+  pit: 0x4d6570,
   roof: 0x8d4a42,
   window: 0x31424f,
   windowLit: 0xf0c36a,

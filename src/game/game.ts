@@ -121,6 +121,7 @@ export class Game {
   private last = 0;
   private jumpBuffer = 0;
   private hintCd = 0;
+  private bossInvuln = 0;
   private smashHold = 0;
   private suckLock = false;
   private bannerTimer = 0;
@@ -194,6 +195,12 @@ export class Game {
         give: (form) => {
           if (form === 'star') this.player.star = 10;
           else this.player.form = form;
+        },
+        tp: (x: number, y: number, z: number) => {
+          this.player.x = x;
+          this.player.y = y;
+          this.player.z = z;
+          this.player.vx = this.player.vy = this.player.vz = 0;
         },
       };
     }
@@ -273,6 +280,7 @@ export class Game {
     if (p.fireCd > 0) p.fireCd = Math.max(0, p.fireCd - dt);
     if (p.spin > 0) p.spin = Math.max(0, p.spin - dt);
     if (this.hintCd > 0) this.hintCd -= dt;
+    if (this.bossInvuln > 0) this.bossInvuln = Math.max(0, this.bossInvuln - dt);
     if (this.boss) this.updateBoss(dt);
 
     this.updateEnemies(dt);
@@ -1169,7 +1177,7 @@ export class Game {
 
   private hitBoss(fromFire: boolean): void {
     const boss = this.boss;
-    if (!boss || boss.state === 'dead') return;
+    if (!boss || boss.state === 'dead' || this.bossInvuln > 0) return;
     const spiky = boss.state === 'spin' || boss.state === 'pound';
     if (!fromFire && spiky) {
       this.hurt();
@@ -1179,6 +1187,7 @@ export class Game {
       /* still counts */
     }
     boss.hp -= 1;
+    this.bossInvuln = 0.65;
     this.audio.sfx('stomp');
     this.burst(boss.x, 1.2, boss.z, C.gold, 8);
     this.shake = 0.22;
@@ -1347,6 +1356,10 @@ export class Game {
       this.shake = Math.max(0, this.shake - dt * 1.8);
     }
     this.pullCamera();
+    if (this.level?.boss) {
+      this.camTarget.x = clamp(this.camTarget.x, -11, 11);
+      this.camTarget.z = clamp(this.camTarget.z, -11, 11);
+    }
     this.camera.position.lerp(this.camTarget, 1 - Math.exp(-6 * dt));
     this.camera.lookAt(this.look);
   }
@@ -1539,7 +1552,7 @@ export class Game {
         row.appendChild(dot);
       }
     }
-    coins.textContent = `Coins this run: ${this.runCoins}    Bank: ${this.save.coins}`;
+    coins.textContent = `Coins: ${this.save.coins}`;
     const secs = Math.floor(this.levelTime);
     time.textContent = `Time ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
   }
