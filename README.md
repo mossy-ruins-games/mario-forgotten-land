@@ -4,7 +4,7 @@ A family game. Unofficial, non-commercial, and made for one household.
 
 A ruined city, a red-cap hero, and mushroom friends to bring home. Everything on screen is built from simple 3D shapes. Sounds are synthesized in the browser. No Nintendo artwork, models, or music are used.
 
-Play it at <https://mossy-ruins-games.github.io/mario-forgotten-land/>.
+Play it at <https://mossy-ruins-games.github.io/mario-forgotten-land/>. That copy is rebuilt on every push to `main`.
 
 ## Play
 
