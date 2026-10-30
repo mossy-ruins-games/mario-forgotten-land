@@ -130,6 +130,14 @@ export function stepBody(
       }
     }
   }
+  if (!b.grounded && b.vy <= 0) {
+    const floor = groundHeight(b.x, b.z, b.y + 0.08, solids);
+    if (floor !== null && b.y >= floor - 0.001 && b.y <= floor + 0.04) {
+      b.y = floor;
+      b.vy = 0;
+      b.grounded = true;
+    }
+  }
 }
 
 export function groundHeight(x: number, z: number, refY: number, solids: AABB[]): number | null {

@@ -122,6 +122,7 @@ export class Game {
   private jumpBuffer = 0;
   private hintCd = 0;
   private bossInvuln = 0;
+  private bossStompLock = false;
   private smashHold = 0;
   private suckLock = false;
   private bannerTimer = 0;
@@ -332,6 +333,7 @@ export class Game {
       p.coyote = TUNE.coyote;
       p.jumps = 0;
       p.flutter = 0;
+      this.bossStompLock = false;
       if (p.plunge) this.landPlunge();
       for (const pad of world.pads) {
         if (Math.hypot(p.x - pad.x, p.z - pad.z) < 1.05 && Math.abs(p.y - pad.y) < 0.45) {
@@ -675,24 +677,43 @@ export class Game {
         }
       } else if (kind === 'hurt') this.hurt();
     }
-    if (!this.boss || this.boss.state === 'dead') return;
-    const spiky = this.boss.state === 'spin' || this.boss.state === 'pound';
-    const kind = this.foeTouch(this.boss.x, this.boss.y, this.boss.z, this.boss.radius, this.boss.height, !spiky);
-    if (kind === 'stomp') {
-      this.hitBoss(false);
-      this.bounceOff();
-    } else if (kind === 'hurt') {
-      if (this.player.star > 0) this.hitBoss(true);
-      else if (spiky || this.boss.state === 'lunge') this.hurt();
+    this.touchBoss();
+  }
+
+  private touchBoss(): void {
+    const boss = this.boss;
+    if (!boss || boss.state === 'dead') return;
+    const p = this.player;
+    const spiky = boss.state === 'spin' || boss.state === 'pound';
+    const dist = Math.hypot(p.x - boss.x, p.z - boss.z);
+    const reach = boss.radius + this.radius() * 0.9;
+    const head = boss.y + boss.height;
+    const onHead = dist < reach && p.y >= head - 0.42 && p.y <= head + 0.38;
+    if (dist > reach + 0.45) this.bossStompLock = false;
+    const falling = p.vy < -0.2 || p.plunge;
+    if (onHead && falling) {
+      if (!this.bossStompLock) {
+        this.bossStompLock = true;
+        if (spiky) this.hurt();
+        else this.hitBoss(false);
+        this.bounceOff();
+      }
+      return;
     }
+    const inBody = dist < reach * 0.92 && p.y < head - 0.25 && p.y + this.bodyHeight() > boss.y + 0.12;
+    if (!inBody) return;
+    if (p.star > 0) this.hitBoss(true);
+    else if (spiky || boss.state === 'lunge') this.hurt();
   }
 
   private foeTouch(x: number, y: number, z: number, radius: number, height: number, canStomp: boolean): 'stomp' | 'hurt' | 'none' {
     const p = this.player;
     const dist = Math.hypot(p.x - x, p.z - z);
     if (dist > radius + this.radius() * 0.95) return 'none';
+    const head = y + height;
     const falling = p.vy < -0.05 || p.plunge;
-    if (canStomp && falling && p.y > y + height * 0.36) return 'stomp';
+    const onHead = p.y >= head - 0.4 && p.y <= head + 0.45;
+    if (canStomp && falling && onHead) return 'stomp';
     if (p.y < y + height * 0.62 && p.y + this.bodyHeight() > y + 0.1) return 'hurt';
     return 'none';
   }
@@ -1187,7 +1208,7 @@ export class Game {
       /* still counts */
     }
     boss.hp -= 1;
-    this.bossInvuln = 0.65;
+    this.bossInvuln = 0.55;
     this.audio.sfx('stomp');
     this.burst(boss.x, 1.2, boss.z, C.gold, 8);
     this.shake = 0.22;
@@ -1493,6 +1514,8 @@ export class Game {
       ringHit: false, spin: 0, deadSent: false,
     };
     rig.root.position.set(0, 0, -1);
+    this.bossInvuln = 0;
+    this.bossStompLock = false;
   }
 
   private spawnParade(): void {
@@ -1759,6 +1782,8 @@ export class Game {
       level: this.level?.id ?? null,
       x: this.player.x,
       y: this.player.y,
+      vy: this.player.vy,
+      grounded: this.player.grounded,
       z: this.player.z,
       hp: this.player.hp,
       form: this.player.form,
